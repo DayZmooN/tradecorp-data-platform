@@ -7,6 +7,7 @@ services:
       - ./data:/home/jovyan/data
     ports:
       - "8889:8888"
+      - "4040:4040"
 
   postgres:
     image: postgres:16
