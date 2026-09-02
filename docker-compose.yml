@@ -1,6 +1,6 @@
 services:
   jupyter-spark:
-    image: jupyter/pyspark-notebook:x86_64-ubuntu-22.04
+    build: .
     volumes:
       - ./notebooks:/home/jovyan/work
       - ./src:/home/jovyan/src
