@@ -5,6 +5,12 @@ import os
 
 load_dotenv()
 
+#   
+#   variable utils
+#
+LOCAL_DIR = "/home/jovyan/data/tmp/"
+CONTAINER_NAME = os.environ["AZURE_CONTAINER_RAW"]
+
 #   Liste des fichiers CSV
 FILES = [
     "customers.csv",
@@ -17,17 +23,20 @@ FILES = [
     "suppliers.csv" 
 ]
 #   download file to local
-def download_file_to_local(container_name, local_dir,file_names):
+def download_file_to_local(container_name, local_dir, file_names):
     """Télécharger les fichiers depuis ADLS vers un repertoire local"""
     client = connection_azure()
     if client is None:
-            raise Exception("Impossible de se connecter à ADLS")
+        raise Exception("Impossible de se connecter à ADLS")
     
     container_client = client.get_container_client(container_name)
 
     # On crée le dossier local s'il n'existe pas
     os.makedirs(local_dir, exist_ok=True)
 
+    # Accepte un fichier unique ou une liste
+    if isinstance(file_names, str):
+        file_names = [file_names]
 
     for blob in container_client.list_blobs():
 
@@ -47,9 +56,13 @@ def download_file_to_local(container_name, local_dir,file_names):
 
 
 #   Read csv with spark
-def read_csv_with_spark(spark,local_dir,file_name):
+def read_csv_with_spark(spark, local_dir, file_name):
     "lecture des fichiers CSV depuis le répertoire local et retourne un dict DataFrame"
     dataframes = {}
+    
+    # Accepte un fichier unique ou une liste
+    if isinstance(file_name, str):
+        file_name = [file_name]
     for fname in file_name:
         path = os.path.join(local_dir,fname)
         #On enleve le .csv pour avoir le nom de la table
@@ -59,19 +72,10 @@ def read_csv_with_spark(spark,local_dir,file_name):
         print(f"Table {table_name} chargée avec {df.count()} lignes")
     return dataframes
 
-#   
-#   variable utils
-#
-LOCAL_DIR = "/home/jovyan/data/tmp"
-CONTAINER_NAME = os.environ["AZURE_CONTAINER_RAW"]
 
 
-#   Download files
-download_file_to_local(
-    CONTAINER_NAME,
-    LOCAL_DIR,
-    FILES
-)
+
+
 #   Session spark
 spark = (
     SparkSession.builder
@@ -79,16 +83,16 @@ spark = (
     .getOrCreate()
 )
 
-dataframes = read_csv_with_spark(
-    spark,
-    LOCAL_DIR,
-    FILES
-)
-
-dataframes["customers"].show()
-
-spark.stop()
-
-#   Lecture des CSV avec spark
 
 
+#   Telecharge tous les CSV et Lecture des CSV avec spark de la liste FILES
+def load_all_tables(spark, localpath):
+    #   Download files
+    download_file_to_local(CONTAINER_NAME, LOCAL_DIR, FILES)
+    return read_csv_with_spark(spark, LOCAL_DIR, FILES)
+
+#   Telecharger CSV un fichier Et le lire spécifiquement
+def load_specificate_table(spark, filename):
+    #   Download files with the name to find in container
+    download_file_to_local(CONTAINER_NAME, LOCAL_DIR,filename)
+    return read_csv_with_spark(spark, LOCAL_DIR, filename)
