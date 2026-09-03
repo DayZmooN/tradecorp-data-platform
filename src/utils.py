@@ -83,7 +83,7 @@ def clean_orders(df):
     # freight en double 
     df = df.withColumn("freight",F.col("freight").cast(DoubleType()))
     # Rename ship_via en shipper_id
-    df = df.withColumnRename("ship_via","shipper_id")
+    df = df.withColumnRenamed("ship_via","shipper_id")
     # True si shipped_date et non null
     df = df.withColumn("is_shipped", F.col("shipped_date").isNotNull())
     return df
@@ -98,6 +98,7 @@ def clean_order_details(df):
     #Rename colonnes
     df = df.withColumnRenamed("unit_price", "prix_unitaire")
     df = df.withColumnRenamed("quantity","quantite")
+    df = add_sous_total(df)
     return df
 
 def add_sous_total(df):
@@ -111,7 +112,7 @@ def add_sous_total(df):
 def clean_employees(df):
     "Nettoie la table employees"
     # Sélection des colonnes
-    df = df.serlect(
+    df = df.select(
         "employee_id","first_name","last_name","title",
         "hire_date","city","country"
     )
@@ -121,10 +122,10 @@ def clean_employees(df):
 
     return df
 
-def clean_product(df):
+def clean_products(df):
     "Nettoie la table products"
     #unite_price en double
-    df = df.withColumn("unite_price", F.col("unite_price").cast(DoubleType()))
+    df = df.withColumn("unit_price", F.col("unit_price").cast(DoubleType()))
     #en_stock
     df = df.withColumn("en_stock", F.col("units_in_stock") > 0)
     return df

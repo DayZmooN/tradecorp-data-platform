@@ -2,6 +2,7 @@ from utils import connection_azure,download_file_to_local
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 import os
+from transformer import apply_cleaning, build_enriched
 
 load_dotenv()
 
@@ -66,3 +67,14 @@ def load_specificate_table(spark, filename):
     #   Download files with the name to find in container
     download_file_to_local(CONTAINER_NAME, LOCAL_DIR,filename)
     return read_csv_with_spark(spark, LOCAL_DIR, filename)
+
+
+#
+#   test clean and build for transfromers
+#
+# data = read_csv_with_spark(spark, LOCAL_DIR,FILES)
+# df_clean = apply_cleaning(data)
+# df_build = build_enriched(df_clean)
+# df_build.show()
+# df_build.printSchema()
+

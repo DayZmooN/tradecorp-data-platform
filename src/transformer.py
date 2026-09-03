@@ -1,6 +1,6 @@
 from utils import (clean_customers,clean_employees,
                    clean_order_details, clean_orders, 
-                   clean_product)
+                   clean_products)
 from pyspark.sql import functions as F
 
 
@@ -11,7 +11,7 @@ def apply_cleaning(df):
     cleaned["orders"] = clean_orders(df["orders"])
     cleaned["order_details"] = clean_order_details(df["order_details"])
     cleaned["employees"] = clean_employees(df["employees"])
-    cleaned["products"] = clean_product(df["products"])
+    cleaned["products"] = clean_products(df["products"])
     cleaned["categories"] = df["categories"]
     cleaned["shippers"] = df["shippers"]
 
@@ -72,5 +72,4 @@ def build_enriched(cleaned):
 
 
     return enriched
-    
-    
+        
