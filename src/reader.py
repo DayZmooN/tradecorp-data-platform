@@ -47,4 +47,18 @@ def download_file_to_local(container_name, local_dir,file_names):
 download_file_to_local(os.environ["AZURE_CONTAINER_RAW"], "/home/jovyan/data/raw",FILES)
 
 
+def read_csv_with_spark(spark,local_dir,file_name):
+    "lecture des fichiers CSV depuis le répertoire local et retourne un dict DataFrame"
+    dataframes = {}
+    for fname in file_name:
+        path = os.path.join(local_dir,fname)
+        #On enleve le .csv pour avoir le nom de la table
+        table_name =  os.path.splitext(fname)[0]
+        df = spark.read.csv(path,header=True, inferSchema=True)
+        dataframes[table_name] = df
+        print(f"Table {table_name} chargée avec {df.count()} lignes")
+    return dataframes
+
+
+
 
