@@ -1,10 +1,19 @@
 services:
   jupyter-spark:
     build: .
+    container_name: tradecorp_spark
     volumes:
       - ./notebooks:/home/jovyan/work
       - ./src:/home/jovyan/src
       - ./data:/home/jovyan/data
+
+    
+    environment:
+      AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}
+      AZURE_STORAGE_ACCOUNT: ${AZURE_STORAGE_ACCOUNT}
+      AZURE_STORAGE_URL: ${AZURE_STORAGE_URL}
+      AZURE_CONTAINER_RAW: ${AZURE_CONTAINER_RAW}
+      
     ports:
       - "8889:8888"
       - "4040:4040"
