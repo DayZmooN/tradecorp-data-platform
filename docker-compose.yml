@@ -6,6 +6,7 @@ services:
       - ./notebooks:/home/jovyan/work
       - ./src:/home/jovyan/src
       - ./data:/home/jovyan/data
+      - ./tests:/home/jovyan/tests
 
     
     environment:
