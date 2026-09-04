@@ -3,14 +3,15 @@ from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 import os
 from transformer import apply_cleaning, build_enriched
+from writer import upload_files_adls
 
 load_dotenv()
 
 #   
 #   variable utils
 #
-LOCAL_DIR = "/home/jovyan/data/tmp/"
-CONTAINER_NAME = os.environ["AZURE_CONTAINER_RAW"]
+LOCAL_DIR = "/home/jovyan/data/"
+CONTAINER_RAW = os.environ["AZURE_CONTAINER_RAW"]
 
 #   Liste des fichiers CSV
 FILES = [
@@ -59,22 +60,41 @@ spark = (
 #   Telecharge tous les CSV et Lecture des CSV avec spark de la liste FILES
 def load_all_tables(spark, localpath):
     #   Download files
-    download_file_to_local(CONTAINER_NAME, LOCAL_DIR, FILES)
+    download_file_to_local(CONTAINER_RAW, LOCAL_DIR, FILES)
     return read_csv_with_spark(spark, LOCAL_DIR, FILES)
 
 #   Telecharger CSV un fichier Et le lire spécifiquement
 def load_specificate_table(spark, filename):
     #   Download files with the name to find in container
-    download_file_to_local(CONTAINER_NAME, LOCAL_DIR,filename)
+    download_file_to_local(CONTAINER_RAW, LOCAL_DIR,filename)
     return read_csv_with_spark(spark, LOCAL_DIR, filename)
 
 
 #
 #   test clean and build for transfromers
 #
-# data = read_csv_with_spark(spark, LOCAL_DIR,FILES)
-# df_clean = apply_cleaning(data)
-# df_build = build_enriched(df_clean)
+data = read_csv_with_spark(spark, f"{LOCAL_DIR}/tmp", FILES)
+df_clean = apply_cleaning(data)
+df_build = build_enriched(df_clean)
 # df_build.show()
 # df_build.printSchema()
+
+
+
+# upload file
+client = connection_azure()
+container_clean = os.environ["AZURE_CONTAINER_CLEAN"]
+
+
+upload_files_adls(
+    client,
+    df_build,
+    f"{LOCAL_DIR}/clean/order",
+    container_clean,
+    "enriched/order",
+    "order.parquet"
+)
+
+
+
 
