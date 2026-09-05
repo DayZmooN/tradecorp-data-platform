@@ -1,9 +1,7 @@
-from utils import connection_azure,download_file_to_local
+from utils import download_file_to_local,download_reference_to_local
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 import os
-from transformer import apply_cleaning, build_enriched
-from writer import upload_files_adls
 
 load_dotenv()
 
@@ -12,6 +10,7 @@ load_dotenv()
 #
 LOCAL_DIR = "/home/jovyan/data/"
 CONTAINER_RAW = os.environ["AZURE_CONTAINER_RAW"]
+REFERENCE_DIR = "reference"
 
 #   Liste des fichiers CSV
 FILES = [
@@ -22,9 +21,13 @@ FILES = [
     "categories.csv",
     "employees.csv",
     "shippers.csv",
-    "suppliers.csv" 
+    "suppliers.csv"
 ]
 
+RAW_REFERENCE_FILE = [
+    "country_currency.csv",
+    "exchange_rate.json"
+]
 
 
 #   Read csv with spark
@@ -35,17 +38,56 @@ def read_csv_with_spark(spark, local_dir, file_name):
     # Accepte un fichier unique ou une liste
     if isinstance(file_name, str):
         file_name = [file_name]
+
     for fname in file_name:
         path = os.path.join(local_dir,fname)
         #On enleve le .csv pour avoir le nom de la table
         table_name =  os.path.splitext(fname)[0]
-        df = spark.read.csv(path,header=True, inferSchema=True)
+
+        df = (
+            spark.read
+            .option("header", True)
+            .option("inferSchema", True)
+            .csv(path)
+        )
+
         dataframes[table_name] = df
         print(f"Table {table_name} chargée avec {df.count()} lignes")
     return dataframes
 
+def read_json_with_spark(spark, local_dir,file_name):
+    path = os.path.join(local_dir, file_name)
+
+    table_name = os.path.splitext(file_name)[0]
+
+    df = spark.read.json(path)
+
+    print(f"Table {table_name} chargée avec {df.count()} lignes")
+
+    return {table_name: df}
 
 
+
+def read_reference(spark, localpath):
+    reference_dir = os.path.join(
+        localpath,
+        REFERENCE_DIR
+    )
+
+    country_currency = read_csv_with_spark(
+        spark,
+        reference_dir,
+        "country_currency.csv"
+    )
+
+    exchange_rate = read_json_with_spark(
+        spark,
+        reference_dir,
+        "exchange_rate.json"
+    )
+    country_currency.update(exchange_rate)
+
+    return country_currency
 
 
 #   Session spark
@@ -59,42 +101,50 @@ spark = (
 
 #   Telecharge tous les CSV et Lecture des CSV avec spark de la liste FILES
 def load_all_tables(spark, localpath):
-    #   Download files
-    download_file_to_local(CONTAINER_RAW, LOCAL_DIR, FILES)
-    return read_csv_with_spark(spark, LOCAL_DIR, FILES)
+    #   RAW tables
+    download_file_to_local(CONTAINER_RAW, localpath, FILES)
+    raw_dataframes = read_csv_with_spark(
+        spark,
+        localpath,
+        FILES
+    )
+
+    #Refernce tables
+    reference_dir =  os.path.join(
+        localpath,
+        REFERENCE_DIR
+    )
+    download_reference_to_local(
+        CONTAINER_RAW,
+        reference_dir,
+        RAW_REFERENCE_FILE
+    )
+
+    #read reference
+    reference = read_reference(
+        spark,
+        localpath
+    )
+    # merge 
+    raw_dataframes.update(reference)
+
+
+    return raw_dataframes  
 
 #   Telecharger CSV un fichier Et le lire spécifiquement
-def load_specificate_table(spark, filename):
+def load_specificate_table(spark,localpath ,filename):
     #   Download files with the name to find in container
-    download_file_to_local(CONTAINER_RAW, LOCAL_DIR,filename)
-    return read_csv_with_spark(spark, LOCAL_DIR, filename)
-
-
-#
-#   test clean and build for transfromers
-#
-data = read_csv_with_spark(spark, f"{LOCAL_DIR}/tmp", FILES)
-df_clean = apply_cleaning(data)
-df_build = build_enriched(df_clean)
-# df_build.show()
-# df_build.printSchema()
+    download_file_to_local(CONTAINER_RAW, localpath,filename)
+    return read_csv_with_spark(spark, localpath, filename)
 
 
 
-# upload file
-client = connection_azure()
-container_clean = os.environ["AZURE_CONTAINER_CLEAN"]
+## TEST reader.py 
 
+# data = load_all_tables(
+#     spark,
+#     os.path.join(LOCAL_DIR, "raw")
+# )
 
-upload_files_adls(
-    client,
-    df_build,
-    f"{LOCAL_DIR}/clean/order",
-    container_clean,
-    "enriched/order",
-    "order_enriched.parquet"
-)
-
-
-
-
+# print("Tables chargées :")
+# print(data.keys())
