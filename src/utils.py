@@ -54,6 +54,49 @@ def download_file_to_local(container_name, local_dir, file_names):
 
             print(f"{blob.name} téléchargé dans {local_path}")
 
+#   download file to local in raw/reference
+def download_reference_to_local(
+    container_name,
+    local_dir,
+    file_names
+):
+    """Télécharger les fichiers du dossier reference/ depuis ADLS."""
+
+    client = connection_azure()
+
+    if client is None:
+        raise Exception("Impossible de se connecter à ADLS")
+
+    container_client = client.get_container_client(container_name)
+
+    os.makedirs(local_dir, exist_ok=True)
+
+    if isinstance(file_names, str):
+        file_names = [file_names]
+
+    for file_name in file_names:
+
+        blob_name = f"reference/{file_name}"
+
+        print(f"Téléchargement de {blob_name}")
+
+        blob_client = container_client.get_blob_client(blob_name)
+
+        download_stream = blob_client.download_blob()
+
+        local_path = os.path.join(
+            local_dir,
+            file_name
+        )
+
+        with open(local_path, "wb") as file:
+            file.write(download_stream.readall())
+
+        print(
+            f"{blob_name} téléchargé dans {local_path}"
+        )
+
+
 
 
 # Nettoyage des tables
