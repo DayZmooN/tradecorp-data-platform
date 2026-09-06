@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql import Row
 import pytest
 from src.utils import clean_customers, clean_orders, add_sous_total
+from src.enrichment import add_currency_column
 
 
 @pytest.fixture(scope="session")
@@ -43,3 +44,32 @@ def test_clean_customers(spark):
     assert row["country"] == "GERMANY" # upper
 
 
+
+def test_add_currency_column(spark):
+    # commande avec juste ce qu'il faut pour le test (customer_id + sous_total)
+    data_orders = [("C1", 100.0)]
+    cols_orders = ["customer_id", "sous_total"]
+    df = spark.createDataFrame(data_orders, cols_orders)
+
+    # client
+    data_customers = [("C1", "FRANCE")]
+    cols_customers = ["customer_id", "country"]
+    customers = spark.createDataFrame(data_customers, cols_customers)
+
+    # mapping pays -> devise
+    data_country_currency = [("FRANCE", "EUR")]
+    cols_country_currency = ["country", "currency"]
+    country_currency = spark.createDataFrame(data_country_currency, cols_country_currency)
+
+    # taux simulé (dict codé en dur, pas d'appel réseau)
+    # on reproduit la structure de exchange_rate.json : une colonne "rates" qui est un struct
+    rates_data = [Row(rates=Row(EUR=0.9, USD=1.0))]
+    exchange_rate = spark.createDataFrame(rates_data)
+
+    result = add_currency_column(spark, df, customers, country_currency, exchange_rate)
+    row = result.collect()[0]
+
+    assert row["currency"] == "EUR"
+    assert row["exchange_rate"] == 0.9
+    # le calcul sera 100 * 0.9 = 90.0
+    assert round(row["sous_total_local"], 2) == 90.0
