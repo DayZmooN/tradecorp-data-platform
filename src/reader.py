@@ -1,6 +1,5 @@
 from utils import download_file_to_local,download_reference_to_local
 from dotenv import load_dotenv
-from pyspark.sql import SparkSession
 import os
 
 load_dotenv()
@@ -90,14 +89,6 @@ def read_reference(spark, localpath):
     return country_currency
 
 
-#   Session spark
-spark = (
-    SparkSession.builder
-    .appName("ReadCSV")
-    .getOrCreate()
-)
-
-
 
 #   Telecharge tous les CSV et Lecture des CSV avec spark de la liste FILES
 def load_all_tables(spark, localpath):
@@ -136,15 +127,3 @@ def load_specificate_table(spark,localpath ,filename):
     #   Download files with the name to find in container
     download_file_to_local(CONTAINER_RAW, localpath,filename)
     return read_csv_with_spark(spark, localpath, filename)
-
-
-
-## TEST reader.py 
-
-# data = load_all_tables(
-#     spark,
-#     os.path.join(LOCAL_DIR, "raw")
-# )
-
-# print("Tables chargées :")
-# print(data.keys())
