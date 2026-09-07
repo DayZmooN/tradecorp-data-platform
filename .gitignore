@@ -2,3 +2,9 @@
 .ipynb_checkpoints
 
 data/tmp
+
+src/__pycache__
+
+data
+
+tests/__pycache__
