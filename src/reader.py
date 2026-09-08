@@ -1,6 +1,7 @@
-from utils import download_file_to_local,download_reference_to_local
+from utils import download_file_to_local,download_reference_to_local,write_intermediate_data
 from dotenv import load_dotenv
 import os
+from pyspark.sql import SparkSession
 
 load_dotenv()
 
@@ -119,6 +120,11 @@ def load_all_tables(spark, localpath):
     # merge 
     raw_dataframes.update(reference)
 
+    path ="/home/jovyan/data/tmp/reader_output"
+
+    write_intermediate_data(raw_dataframes,path)
+    
+
 
     return raw_dataframes  
 
@@ -127,3 +133,8 @@ def load_specificate_table(spark,localpath ,filename):
     #   Download files with the name to find in container
     download_file_to_local(CONTAINER_RAW, localpath,filename)
     return read_csv_with_spark(spark, localpath, filename)
+
+
+spark = SparkSession.builder.appName("reader").getOrCreate()
+
+load_all_tables(spark, f"{LOCAL_DIR}/raw")
