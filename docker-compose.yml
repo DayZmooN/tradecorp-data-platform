@@ -63,11 +63,12 @@ services:
 
     command: >
       bash -c "
-      airflow db init &&s
+      airflow db init &&
       airflow users create --username admin --firstname Admin --lastname Admin --role Admin --email admin@admin.com --password admin || true &&
       airflow webserver &
       airflow scheduler
       "
+
     
 
 volumes:
