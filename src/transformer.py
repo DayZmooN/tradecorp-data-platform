@@ -1,8 +1,34 @@
 from utils import (clean_customers,clean_employees,
                    clean_order_details, clean_orders, 
-                   clean_products)
+                   clean_products, write_intermediate_data)
 from pyspark.sql import functions as F
+import os
+from pyspark.sql import SparkSession
 
+spark = SparkSession.builder.appName("transformer").getOrCreate()
+
+
+LOCAL_DIR ="/home/jovyan/data/tmp/reader_output"
+LOCAL_OUTPUT = "/home/jovyan/data/tmp/tranformer_output"
+FILES = [
+    "customers",
+    "orders",
+    "order_details",
+    "products",
+    "categories",
+    "employees",
+    "shippers",
+    "suppliers"
+]
+
+def files_output(spark ,file, input_dir):
+    dfs = {}
+    for f in file:
+        output_path = os.path.join(input_dir,f)
+        dfs[f] = spark.read.parquet(output_path)
+    return dfs
+
+dfs = files_output(spark,FILES,LOCAL_DIR)
 
 def apply_cleaning(df):
     "appliquer le nettoyages a chaque table"
@@ -73,3 +99,6 @@ def build_enriched(cleaned):
 
     return enriched
         
+cleaned =  apply_cleaning(dfs)
+enriched = build_enriched(cleaned)
+write_intermediate_data({"enriched": enriched},LOCAL_OUTPUT)
