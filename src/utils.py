@@ -172,3 +172,20 @@ def clean_products(df):
     #en_stock
     df = df.withColumn("en_stock", F.col("units_in_stock") > 0)
     return df
+
+
+
+## save in tmp for cache df
+def write_intermediate_data(
+    dataframes, output_dir
+):
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    for name, df in dataframes.items():
+
+        output_path = os.path.join(output_dir, name)
+
+        # logger.info(f"Écriture intermédiaire de {name} vers {output_path}")
+
+        df.write.mode("overwrite").parquet(output_path)
