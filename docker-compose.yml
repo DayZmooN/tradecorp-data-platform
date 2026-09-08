@@ -1,6 +1,7 @@
 services:
   jupyter-spark:
     build: .
+    image: tradecorp-data-platform:latest
     container_name: tradecorp_spark
     volumes:
       - ./notebooks:/home/jovyan/work
@@ -50,7 +51,15 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile.airflow
+    image: apache/airflow:2.8.0
     container_name: tradecorp_airflow
+    environment:
+      AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}
+      AZURE_STORAGE_ACCOUNT: ${AZURE_STORAGE_ACCOUNT}
+      AZURE_STORAGE_URL: ${AZURE_STORAGE_URL}
+      AZURE_CONTAINER_RAW: ${AZURE_CONTAINER_RAW}
+      AZURE_CONTAINER_CLEAN: ${AZURE_CONTAINER_CLEAN}
+      
     depends_on:
       - postgres
     ports:
@@ -68,6 +77,7 @@ services:
       airflow webserver &
       airflow scheduler
       "
+
 
     
 
