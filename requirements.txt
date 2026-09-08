@@ -1,3 +1,4 @@
 azure-storage-blob
 dotenv
 pytest
+apache-airflow-providers-docker
