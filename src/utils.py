@@ -3,6 +3,16 @@ from dotenv import load_dotenv
 import os
 from pyspark.sql import functions as F
 from pyspark.sql.types import DateType, DoubleType, IntegerType
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+)
+
+logger = logging.getLogger(__name__)
+
+
 
 
 load_dotenv()
@@ -17,11 +27,12 @@ def connection_azure():
     try:
         client = BlobServiceClient.from_connection_string(connection_string)
         client.get_account_information()
-        print("Connexion à ADLS réussie")        
+        logger.info("Connexion à ADLS réussie")
         return client
     except Exception as e:
-        print(f"Erreur de connexion à ADLS : {e}")
+        logger.error(f"Erreur de connexion à ADLS : {e}")
         return None
+
 
 #   download file to local
 def download_file_to_local(container_name, local_dir, file_names):
@@ -42,17 +53,26 @@ def download_file_to_local(container_name, local_dir, file_names):
     for blob in container_client.list_blobs():
 
         if blob.name in file_names:
-            print(f"Téléchargement de {blob.name}")
+            logger.info(f"Téléchargement de {blob.name}")
+
 
             blob_client = container_client.get_blob_client(blob.name)
             download_stream = blob_client.download_blob()
 
             local_path = os.path.join(local_dir,blob.name)
 
+            os.makedirs(
+                os.path.dirname(local_path),
+                exist_ok=True
+            )
+
+
             with open(local_path, "wb") as file:
                 file.write(download_stream.readall())
 
-            print(f"{blob.name} téléchargé dans {local_path}")
+            logger.info(
+                f"{blob.name} téléchargé dans {local_path}"
+            )
 
 #   download file to local in raw/reference
 def download_reference_to_local(
@@ -78,7 +98,8 @@ def download_reference_to_local(
 
         blob_name = f"reference/{file_name}"
 
-        print(f"Téléchargement de {blob_name}")
+        logger.info(f"Téléchargement de {blob_name}")
+
 
         blob_client = container_client.get_blob_client(blob_name)
 
@@ -92,7 +113,7 @@ def download_reference_to_local(
         with open(local_path, "wb") as file:
             file.write(download_stream.readall())
 
-        print(
+        logger.info(
             f"{blob_name} téléchargé dans {local_path}"
         )
 
@@ -183,9 +204,13 @@ def write_intermediate_data(
     os.makedirs(output_dir, exist_ok=True)
 
     for name, df in dataframes.items():
-
+        
         output_path = os.path.join(output_dir, name)
 
-        # logger.info(f"Écriture intermédiaire de {name} vers {output_path}")
+        logger.info(f"Écriture intermédiaire de {name} vers {output_path}")
 
         df.write.mode("overwrite").parquet(output_path)
+        logger.info(
+            f"Écriture de {name} terminée"
+        )
+        
