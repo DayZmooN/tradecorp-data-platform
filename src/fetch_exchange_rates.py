@@ -4,8 +4,14 @@ from azure.storage.blob import BlobServiceClient
 import os
 from dotenv import load_dotenv
 from utils import connection_azure
-from pathlib import Path
+import logging
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+)
+
+logger = logging.getLogger(__name__)
 load_dotenv()
 
 
@@ -39,6 +45,7 @@ def fetch_and_upload():
     response = requests.get(url)
     response.raise_for_status()
     data = response.json()
+    logger.info(f"Nombre de taux de change : {len(data['rates'])}")
 
     # Upload vers ADLS
     conn_str = os.environ["AZURE_STORAGE_URL"]
@@ -47,8 +54,7 @@ def fetch_and_upload():
     blob_name = "reference/exchange_rate.json"
     blob_client = client.get_blob_client(container=container, blob=blob_name)
     blob_client.upload_blob(json.dumps(data), overwrite=True)
-    print("Taux de change téléchargé et uploadé avec succés")
-
+    logger.info(f"Taux de change téléchargés et uploadés avec succès dans {blob_name}")
 
 if __name__ == "__main__":
     fetch_and_upload()
