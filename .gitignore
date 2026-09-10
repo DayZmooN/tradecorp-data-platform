@@ -8,3 +8,5 @@ src/__pycache__
 data
 
 tests/__pycache__
+
+dags/__pycache__
