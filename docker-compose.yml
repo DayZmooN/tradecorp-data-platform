@@ -3,6 +3,8 @@ services:
     build: .
     image: tradecorp-data-platform:latest
     container_name: tradecorp_spark
+    working_dir: /home/jovyan/work
+    
     volumes:
       - ./notebooks:/home/jovyan/work
       - ./src:/home/jovyan/src
